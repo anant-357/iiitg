@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 #include "myserver.h"
+#include <pthread.h>
 
 struct hostAndPort
 {
@@ -15,29 +16,7 @@ struct hostAndPort
     int port;
 } typedef hp;
 
-void sendFile(int sockfd, char *file)
-{
-    FILE *fp = fopen(file, "r");
-    char buffer[PACKET_SIZE];
-    char acknowledgment[sizeof(ACKNOWLEDGEMENT)];
-
-    while (fgets(buffer, PACKET_SIZE, fp) != NULL)
-    // while (int d = fread(buffer, PACKET_SIZE, 1, fp))
-    {
-        if (send(sockfd, buffer, sizeof(buffer), 0) == -1)
-        {
-            perror("Unable to send Data");
-            return;
-        }
-        bzero(buffer, PACKET_SIZE);
-        if (read(sockfd, acknowledgment, sizeof(acknowledgment)) && strcmp(acknowledgment, ACKNOWLEDGEMENT) < 0)
-        {
-            perror("Error while acknowledging");
-            return;
-        }
-        printf("%s", acknowledgment);
-    }
-}
+int id;
 
 hp getPortandHost(int argc, char *argv[])
 {
@@ -75,11 +54,68 @@ hp getPortandHost(int argc, char *argv[])
     }
     else
     {
-        perror("Too many inputs!.Example Usage:\n\n\t./client \"127.0.0.1\" 5050");
+        perror("Too many inputs!.Example Usage:\n\n\t./server 5050");
         HP.port = -1;
         strcpy(HP.host, "");
     }
     return HP;
+}
+
+void *read_thread(void *socket_void_ptr)
+{
+    int socket = *(int *)socket_void_ptr;
+    while (1)
+    {
+        char message[MSG_SIZE + 1];
+
+        bzero(message, sizeof(message));
+        read(socket, message, sizeof(message));
+        // printf("Message: %s", message);
+
+        int dest;
+        char get_message[MSG_SIZE + 1];
+        sscanf(message, "%d %[^\n]", &dest, get_message);
+        if (dest == id)
+        {
+            printf("accepted %s\n", get_message);
+        }
+        else
+        {
+            printf("rejected %s\n", get_message);
+        }
+    }
+    return (void *)NULL;
+}
+
+void *write_thread(void *socket_void_ptr)
+{
+    int socket = *(int *)socket_void_ptr;
+    int n = 0;
+    char message[MSG_SIZE + 1];
+
+    bzero(message, sizeof(message));
+    printf("Please enter the message (<i> [message] )\n");
+    while ((message[n++] = getchar()) != '\n')
+    {
+    }
+
+    write(socket, message, sizeof(message));
+    if (message[0] == '^')
+    {
+        return (void *)NULL;
+    }
+    return (void *)NULL;
+}
+
+void chat(int socket)
+{
+    pthread_t read;
+    pthread_t write;
+    pthread_create(&read, NULL, read_thread, &socket);
+    pthread_create(&write, NULL, write_thread, &socket);
+
+    pthread_join(read, NULL);
+    pthread_join(write, NULL);
 }
 
 int main(int argc, char *argv[])
@@ -92,6 +128,7 @@ int main(int argc, char *argv[])
         printf("\n Socket creation error \n");
         return -1;
     }
+    printf("%d", client_fd);
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(HP.port);
@@ -115,14 +152,11 @@ int main(int argc, char *argv[])
 
     bzero(message, sizeof(message));
     read(socket, message, sizeof(message));
-    if (message[0] == '^')
-    {
-        printf("Line Busy!");
-        return -1;
-    }
-    else
-    {
-        sendFile(socket, "alice.txt");
-    }
+    sscanf(message, "%d %[^\n]", &id, message);
+    printf("id: %d\n", id);
+
+    chat(client_fd);
+    close(client_fd);
+
     return 0;
 }

@@ -25,11 +25,6 @@ void getFile(int sockfd, char *file)
             return;
         }
         printf(buffer);
-        // if (fputs(buffer, fp) < 0)
-        // {
-        //     perror("Unable to write to file!");
-        //     return;
-        // }
         bzero(buffer, PACKET_SIZE);
         if (write(sockfd, ACKNOWLEDGEMENT, sizeof(ACKNOWLEDGEMENT)) < 0)
         {

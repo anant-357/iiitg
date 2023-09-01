@@ -1,0 +1,16 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-c",
+      "-g",
+      "-Wall",
+      "-o",
+      "../bin/server",
+      "server.c"
+    ],
+    "directory": "/home/zinnia/iiitg/Networking/lab4/src",
+    "file": "/home/zinnia/iiitg/Networking/lab4/src/server.c",
+    "output": "/home/zinnia/iiitg/Networking/lab4/bin/server"
+  }
+]
