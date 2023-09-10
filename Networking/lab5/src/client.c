@@ -33,9 +33,10 @@ int receiveFrame(int sockfd, char* buffer, char* file){
             return -1;
         }
 		memcpy(&frame, buffer, sizeof(FRAME));
-		if(frame.acknowledgement==1){
+		if(frame.acknowledgement==1)
 				return 0;
-		}
+		if(frame.sequence == -1)
+				return -2;
 		printFrame(frame);
 		if(frame.sequence>last){
 				int file_fd = open(file, O_CREAT | O_WRONLY | O_APPEND, 0666);
@@ -77,6 +78,9 @@ void getFile(int sockfd, char *file)
 		if(sequence>=0){
 				sendAcknowledgement(sockfd, sequence, buffer);
 		    	bzero(buffer, sizeof(FRAME));
+		}else{
+				close(sockfd);
+				break;
 		}
 	}
     return;

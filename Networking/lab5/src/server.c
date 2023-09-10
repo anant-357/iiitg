@@ -152,6 +152,10 @@ void* frame_thread_function(){
 				}	
 		}
 		if (finished){
+				FRAME frame;
+				strcpy(buffer, "END");
+				createFrame(-1, DATA, buffer, &frame);
+				sendFrame(&frame);
 				pthread_cancel(timer_thread_id);
 				pthread_cancel(acknowledgement_thread_id);
 				break;
@@ -177,7 +181,6 @@ void sendFile()
 	pthread_create(&frame_thread_id, NULL, &frame_thread_function, NULL);
 	pthread_create(&acknowledgement_thread_id, NULL, &acknowledgement_thread_function, NULL);		
 	pthread_join(frame_thread_id, NULL);
-    printf("readched\n");
 }
 
 int getPort(int argc, char *argv[])
@@ -260,7 +263,7 @@ int main(int argc, char *argv[])
         printf("Cannot accept");
     }
     printf("Connection accepted from %s:%d\n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-    createWindow(&window,7);
+    createWindow(&window,6);
     backup_length = window.Ssize;
 	backup = malloc(sizeof(FRAME)*backup_length);
 	backup_start = 0;
