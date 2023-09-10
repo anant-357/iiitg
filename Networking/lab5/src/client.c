@@ -11,12 +11,13 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include "frame.h"
 #include "myserver.h"
 #include <sys/timerfd.h>
 #include <poll.h>
 #include <fcntl.h>
+#include "window.h"
 int last;
-
 
 struct hostAndPort
 {
@@ -24,42 +25,14 @@ struct hostAndPort
     int port;
 } typedef hp;
 
-void stringToFrame(FRAME *frame, char frame_str[PACKET_SIZE + 4])
-{
-    sscanf(frame_str, "%d %d %[^\n]", &(frame->sequence), &(frame->acknowledgement), frame->data);
-}
-
-void frameToString(FRAME *frame, char *frame_str) {
-    char sequence_str[10]; 
-    char acknowledgement_str[10]; 
-
-    snprintf(sequence_str, sizeof(sequence_str), "%d", frame->sequence);
-    snprintf(acknowledgement_str, sizeof(acknowledgement_str), "%d", frame->acknowledgement);
-
-    strcpy(frame_str, sequence_str);
-    strcat(frame_str, " ");
-    strcat(frame_str, acknowledgement_str);
-    strcat(frame_str, " ");
-    strcat(frame_str, frame->data);
-}
-
-void printFrame(FRAME frame){
-		printf("[%d]", frame.sequence);
-		if(frame.acknowledgement == 1){
-				printf("Acknowledgement\n");
-		}else{
-				printf("Data Frame->(%s)\n", frame.data);
-		}
-}
-
 int receiveFrame(int sockfd, char* buffer, char* file){
 		FRAME frame;
-        if (read(sockfd, buffer, PACKET_SIZE+4) < 0)
+        if (recv(sockfd, buffer, sizeof(FRAME), 0) < 0)
         {
             perror("Unable to recieve from client! \n");
             return -1;
         }
-		stringToFrame(&frame, buffer);
+		memcpy(&frame, buffer, sizeof(FRAME));
 		if(frame.acknowledgement==1){
 				return 0;
 		}
@@ -68,7 +41,7 @@ int receiveFrame(int sockfd, char* buffer, char* file){
 				int file_fd = open(file, O_CREAT | O_WRONLY | O_APPEND, 0666);
 				int out = dup(STDOUT_FILENO);
 				dup2(file_fd, STDOUT_FILENO);
-				printf("%s\n",frame.data);
+				printf("%s",frame.data);
 				fflush(stdout);
 				dup2(out, STDOUT_FILENO);
 				close(file_fd);
@@ -79,10 +52,11 @@ int receiveFrame(int sockfd, char* buffer, char* file){
 int sendAcknowledgement(int sockfd, int sequence, char* buffer){
 		FRAME frame;
 		frame.acknowledgement = 1;
-		strcpy(frame.data,"acknowledgement");
-		frameToString(&frame, buffer);
+		strcpy(frame.data,"Piggy backing Data");
+		noise(&frame);
+		memcpy(buffer, &frame, sizeof(FRAME));
 		fflush(stdout);
-		if (write(sockfd, buffer , strlen(buffer)) <= 0)
+		if (send(sockfd, buffer , sizeof(FRAME), 0) <= 0)
         {
             perror("Error while acknowledging");
 			return -1;
@@ -94,20 +68,15 @@ int sendAcknowledgement(int sockfd, int sequence, char* buffer){
 
 void getFile(int sockfd, char *file)
 {
-    char buffer[PACKET_SIZE+4];
+    char buffer[sizeof(FRAME)];
 	last=-1;
-	int flag = 0;
     while (1)
     {
 		int sequence = receiveFrame(sockfd, buffer, file);
-		bzero(buffer, PACKET_SIZE+4);
+		bzero(buffer, sizeof(FRAME));
 		if(sequence>=0){
-				if(flag==0){
-						flag=1;
-						continue;
-				}
 				sendAcknowledgement(sockfd, sequence, buffer);
-		    	bzero(buffer, PACKET_SIZE+4);
+		    	bzero(buffer, sizeof(FRAME));
 		}
 	}
     return;

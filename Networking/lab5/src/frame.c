@@ -1,33 +1,33 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "myserver.h"
 #include "frame.h"
 
-void frameToString(FRAME *frame, char *frame_str) {
-    char sequence_str[10]; // Adjust the size as needed
-    char acknowledgement_str[10]; // Adjust the size as needed
-
-    snprintf(sequence_str, sizeof(sequence_str), "%d", frame->sequence);
-    snprintf(acknowledgement_str, sizeof(acknowledgement_str), "%d", frame->acknowledgement);
-
-    strcpy(frame_str, sequence_str);
-    strcat(frame_str, " ");
-    strcat(frame_str, acknowledgement_str);
-    strcat(frame_str, " ");
-    strcat(frame_str, frame->data);
+void createFrame(int sequence, int type, char data[DATA_SIZE], FRAME* frame){
+   frame->sequence = sequence;
+   frame->acknowledgement = type;
+   frame->lost = 0;
+   strcpy(frame->data, data);
 }
 
-void stringToFrame(FRAME *frame, char frame_str[PACKET_SIZE + 4])
-{
-    sscanf(frame_str, "%d %d %[^\n]", &(frame->sequence), &(frame->acknowledgement), frame->data);
+void noise(FRAME *frame){
+    if(NOISE == -1 || rand()%NOISE == 0){
+		frame->lost=1;
+		printf("loosing frame\n");
+	}
 }
 
 void printFrame(FRAME frame){
 		printf("[%d]", frame.sequence);
-		if(frame.acknowledgement == 1){
-				printf("Acknowledgement\n");
-		}else{
+		if(frame.acknowledgement == ACK){
+				printf("Acknowledgement for %d : data-> %s\n", frame.sequence, frame.data);
+		}else if(frame.acknowledgement == NACK){
+				printf("Acknowledgement for %d\n", frame.sequence);
+		}else if(frame.acknowledgement == DATA){
 				printf("Data Frame->(%s)\n", frame.data);
+		}else{
+				printf("corrupt frame %d %d %s", frame.acknowledgement, frame.sequence, frame.data);
 		}
 }
 

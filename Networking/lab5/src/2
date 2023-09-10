@@ -54,6 +54,8 @@ int sendFrame(FRAME* frame){
         }
 		pthread_mutex_lock(&lock);
 		markFrameSent(&window,*frame);
+		printFrame(*frame);
+		printWindow(window);
 		pthread_mutex_unlock(&lock);
 		return 1;
 }
@@ -74,7 +76,9 @@ int receiveAcknowledgement(){
 				return 0;
 		}
 		pthread_mutex_lock(&lock);
+		printFrame(frame);
 		markFrameAcknowledged(&window, frame);
+		printWindow(window);
 		pthread_mutex_unlock(&lock);
 		return 1;
 }
@@ -134,7 +138,6 @@ void* frame_thread_function(){
     FILE *fp = fopen(file, "r");
     char buffer[DATA_SIZE];
 	int sequence = 0;
-	int finished = 0;
     while (1){
 		while(sequence >= window.Sn && sequence < window.Ssize + window.Sf && window.slots[sequence]!=SENT){
 				if (fgets(buffer, DATA_SIZE, fp)!=NULL){
@@ -147,16 +150,13 @@ void* frame_thread_function(){
 						bzero(buffer, DATA_SIZE);
 						sleep(2);
 				}else{
-						finished = 1;
+						pthread_cancel(timer_thread_id);
+						pthread_cancel(acknowledgement_thread_id);
 						break;
 				}	
 		}
-		if (finished){
-				pthread_cancel(timer_thread_id);
-				pthread_cancel(acknowledgement_thread_id);
-				break;
-		}
     }
+    printf("reached\n");
     return (void*)NULL;
 }
 
@@ -177,6 +177,7 @@ void sendFile()
 	pthread_create(&frame_thread_id, NULL, &frame_thread_function, NULL);
 	pthread_create(&acknowledgement_thread_id, NULL, &acknowledgement_thread_function, NULL);		
 	pthread_join(frame_thread_id, NULL);
+	pthread_join(acknowledgement_thread_id, NULL);
     printf("readched\n");
 }
 

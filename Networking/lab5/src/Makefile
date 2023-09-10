@@ -1,9 +1,13 @@
-q1: server.c client.c
-	gcc -g -Wall -o ../bin/server server.c
-	gcc -g -Wall -o ../bin/client client.c
+CC = gcc
+CFLAGS = -Wall -g
 
-osi: osi.c
-	gcc -g -Wall -o ../bin/osi osi.c
+q1: server.c client.c frame.c window.c
+	$(CC) $(CFLAGS) -o ../bin/server server.c frame.c window.c
+	$(CC) $(CFLAGS) -o ../bin/client client.c frame.c
+
+q2: server.c client.c frame.c window.c
+	$(CC) $(CFLAGS) -o ../bin/server n_server.c frame.c window.c
+	$(CC) $(CFLAGS) -o ../bin/client client.c frame.c
 
 clean:
 	rm ../bin/*

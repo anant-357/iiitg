@@ -26,7 +26,6 @@ int backup_next;
 int sockfd;
 
 pthread_t timer_thread_id;
-pthread_t acknowledgement_thread_id;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER; 
 
 WINDOW window;
@@ -55,6 +54,8 @@ int sendFrame(FRAME* frame){
 		pthread_mutex_lock(&lock);
 		markFrameSent(&window,*frame);
 		pthread_mutex_unlock(&lock);
+		printFrame(*frame);
+		printWindow(window);
 		return 1;
 }
 
@@ -75,6 +76,8 @@ int receiveAcknowledgement(){
 		}
 		pthread_mutex_lock(&lock);
 		markFrameAcknowledged(&window, frame);
+		printFrame(frame);
+		printWindow(window);
 		pthread_mutex_unlock(&lock);
 		return 1;
 }
@@ -95,7 +98,8 @@ void* timer_thread_function(void* void_fd) {
                 perror("read");
             } else {
                 printf("Timer expired -> resending Frame\n");
-				sendFrame(&(window.frames[window.Sf]));
+				for(int i = backup_start; i!=backup_next; i = (i + 1)%backup_length)
+						sendFrame(&(backup[i]));
             }
         } else{
             perror("poll");
@@ -134,27 +138,17 @@ void* frame_thread_function(){
     FILE *fp = fopen(file, "r");
     char buffer[DATA_SIZE];
 	int sequence = 0;
-	int finished = 0;
     while (1){
 		while(sequence >= window.Sn && sequence < window.Ssize + window.Sf && window.slots[sequence]!=SENT){
 				if (fgets(buffer, DATA_SIZE, fp)!=NULL){
 						FRAME frame;
 						createFrame(sequence, DATA, buffer, &frame);
 						sendFrame(&frame);
-						printFrame(frame);
-						printWindow(window);
 						sequence=(sequence + 1) % window.Ssize;
 						bzero(buffer, DATA_SIZE);
-						sleep(2);
 				}else{
-						finished = 1;
 						break;
 				}	
-		}
-		if (finished){
-				pthread_cancel(timer_thread_id);
-				pthread_cancel(acknowledgement_thread_id);
-				break;
 		}
     }
     return (void*)NULL;
@@ -164,6 +158,7 @@ void sendFile()
 {
     pthread_mutex_init(&lock, NULL);
 	printWindow(window);
+	pthread_t acknowledgement_thread_id;
 	pthread_t frame_thread_id;
 	int timer_fd;
 	struct itimerspec timer;
@@ -177,7 +172,7 @@ void sendFile()
 	pthread_create(&frame_thread_id, NULL, &frame_thread_function, NULL);
 	pthread_create(&acknowledgement_thread_id, NULL, &acknowledgement_thread_function, NULL);		
 	pthread_join(frame_thread_id, NULL);
-    printf("readched\n");
+	pthread_join(acknowledgement_thread_id, NULL);
 }
 
 int getPort(int argc, char *argv[])
@@ -252,7 +247,8 @@ int main(int argc, char *argv[])
         exit(0);
     }
     printf("Listening on %d...\n", port);
-
+    while(1){
+			fork();
     sockfd = accept(socket_fd, (struct sockaddr *)&address, (socklen_t *)&address_length);
 	
 	if (sockfd < 0)
@@ -266,6 +262,7 @@ int main(int argc, char *argv[])
 	backup_start = 0;
 	backup_next = 0;
 	sendFile();
+	}
     close(sockfd);
 
     shutdown(socket_fd, SHUT_RDWR);
