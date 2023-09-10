@@ -136,7 +136,7 @@ void* frame_thread_function(){
 	int sequence = 0;
 	int finished = 0;
     while (1){
-		while(sequence >= window.Sn && sequence < window.Ssize + window.Sf && window.slots[sequence]!=SENT){
+		while(sequence == window.Sn && window.slots[sequence]!=SENT){
 				if (fgets(buffer, DATA_SIZE, fp)!=NULL){
 						FRAME frame;
 						createFrame(sequence, DATA, buffer, &frame);
@@ -263,7 +263,7 @@ int main(int argc, char *argv[])
         printf("Cannot accept");
     }
     printf("Connection accepted from %s:%d\n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-    createWindow(&window,6);
+    createWindow(&window,7);
     backup_length = window.Ssize;
 	backup = malloc(sizeof(FRAME)*backup_length);
 	backup_start = 0;

@@ -19,13 +19,18 @@
 #include "frame.h"
 #include <math.h>
 
+char filename[20];
 FRAME* backup;
 int backup_length;
 int backup_start;
 int backup_next;
 int sockfd;
 
+int total_frames_sent;
+int ack_received;
+
 pthread_t timer_thread_id;
+pthread_t acknowledgement_thread_id;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER; 
 
 WINDOW window;
@@ -46,6 +51,7 @@ int sendFrame(FRAME* frame){
 		addFrameToBackup(*frame);
 		memcpy(frame_str, frame, sizeof(FRAME));
 		printf("%s\n", frame_str);
+		total_frames_sent++;
         if (send(sockfd, frame_str, sizeof(FRAME), 0) == -1)
         {
             perror("Unable to send Data");
@@ -54,8 +60,11 @@ int sendFrame(FRAME* frame){
 		pthread_mutex_lock(&lock);
 		markFrameSent(&window,*frame);
 		pthread_mutex_unlock(&lock);
-		printFrame(*frame);
-		printWindow(window);
+		if(frame->lost==1){
+				printFrame(*frame);
+				printWindow(window);
+				sleep(5);
+		}
 		return 1;
 }
 
@@ -74,10 +83,12 @@ int receiveAcknowledgement(){
 		if(frame.lost==1){
 				return 0;
 		}
+		ack_received++;
 		pthread_mutex_lock(&lock);
+		if(window.slots[frame.sequence]!=SENT){
+				return 0;
+		}
 		markFrameAcknowledged(&window, frame);
-		printFrame(frame);
-		printWindow(window);
 		pthread_mutex_unlock(&lock);
 		return 1;
 }
@@ -98,8 +109,7 @@ void* timer_thread_function(void* void_fd) {
                 perror("read");
             } else {
                 printf("Timer expired -> resending Frame\n");
-				for(int i = backup_start; i!=backup_next; i = (i + 1)%backup_length)
-						sendFrame(&(backup[i]));
+				sendFrame(&(window.frames[window.Sf]));
             }
         } else{
             perror("poll");
@@ -108,6 +118,7 @@ void* timer_thread_function(void* void_fd) {
 }
 
 void* acknowledgement_thread_function(){
+    sleep(1);
     while(1){
 		int r = receiveAcknowledgement();
 		if(r==1){
@@ -134,21 +145,34 @@ void* acknowledgement_thread_function(){
 }
 
 void* frame_thread_function(){
-    char file[10] = "abc.txt";
-    FILE *fp = fopen(file, "r");
+    FILE *fp = fopen(filename, "r");
     char buffer[DATA_SIZE];
 	int sequence = 0;
+	int finished = 0;
     while (1){
-		while(sequence >= window.Sn && sequence < window.Ssize + window.Sf && window.slots[sequence]!=SENT){
+		while(sequence == window.Sn && window.slots[sequence]!=SENT){
 				if (fgets(buffer, DATA_SIZE, fp)!=NULL){
 						FRAME frame;
 						createFrame(sequence, DATA, buffer, &frame);
 						sendFrame(&frame);
+						printFrame(frame);
+						printWindow(window);
 						sequence=(sequence + 1) % window.Ssize;
 						bzero(buffer, DATA_SIZE);
+						sleep(2);
 				}else{
+						finished = 1;
 						break;
 				}	
+		}
+		if (finished){
+				FRAME frame;
+				strcpy(buffer, "END");
+				createFrame(-1, DATA, buffer, &frame);
+				sendFrame(&frame);
+				pthread_cancel(timer_thread_id);
+				pthread_cancel(acknowledgement_thread_id);
+				break;
 		}
     }
     return (void*)NULL;
@@ -158,7 +182,6 @@ void sendFile()
 {
     pthread_mutex_init(&lock, NULL);
 	printWindow(window);
-	pthread_t acknowledgement_thread_id;
 	pthread_t frame_thread_id;
 	int timer_fd;
 	struct itimerspec timer;
@@ -172,19 +195,33 @@ void sendFile()
 	pthread_create(&frame_thread_id, NULL, &frame_thread_function, NULL);
 	pthread_create(&acknowledgement_thread_id, NULL, &acknowledgement_thread_function, NULL);		
 	pthread_join(frame_thread_id, NULL);
-	pthread_join(acknowledgement_thread_id, NULL);
 }
 
-int getPort(int argc, char *argv[])
+struct hostAndPort
 {
+    char host[15];
+    int port;
+} typedef hp;
+
+hp getPortandHost(int argc, char *argv[])
+{
+    hp HP;
+
     if (argc == 1)
-    {
-        printf("Using default Port(8080)");
-        return PORT;
+    {   strcpy(filename,"abc.txt");
+        printf("Using localhost(127.0.0.1) and  default Port(8080)\n");
+        HP.port = PORT;
+        strcpy(HP.host, LOCALHOST);
     }
     else if (argc == 2)
+    {   
+        strcpy(HP.host, LOCALHOST);
+		strcpy(filename, argv[1]);
+        HP.port = PORT;
+    }
+    else if (argc == 3)
     {
-        int port = atoi(argv[1]);
+		int port = atoi(argv[2]);
         if (port == 0)
         {
             perror("Incorrect format of port.Example Usage:\n\n\t./server 5050");
@@ -193,78 +230,72 @@ int getPort(int argc, char *argv[])
         else
         {
             printf("Using port: %d", port);
+			HP.port = port;
         }
-        return port;
+		strcpy(filename, argv[1]);
     }
-    else
+    else if (argc == 4)
     {
-        perror("Too many inputs!.Example Usage:\n\n\t./server 5050");
-        return -1;
-    }
+		int port = atoi(argv[3]);
+        if (port == 0)
+        {
+            perror("Incorrect format of port.Example Usage:\n\n\t./server 5050");
+            exit(0);
+        }
+        strcpy(HP.host, argv[2]);
+        strcpy(filename, argv[1]);
+		HP.port = port;
+
+    }else{
+		perror("Too many inputs!.Example Usage:\n\n\t./client \"127.0.0.1\" 5050");
+        HP.port = -1;
+        strcpy(HP.host, "");
+	}
+    return HP;
 }
+
+
 
 int main(int argc, char *argv[])
 {
-    int socket_fd;
-    int port = getPort(argc, argv);
-    int opt = 1;
-
-    struct sockaddr_in address;
-    int address_length = sizeof(address);
-
-    if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    hp HP = getPortandHost(argc, argv);
+    int status;
+    struct sockaddr_in serv_addr;
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        perror("Could not Make Socket\n");
-        exit(0);
-    }
-    printf("Socket Made...\n");
-    if ((setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))))
-    {
-        perror("Could not setup socket options\n");
-        exit(0);
-    }
-    printf("Socket Options Set-Up...\n");
-
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(port);
-
-    // Binding Socket
-
-    if (bind(socket_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
-    {
-        perror("Bind Failed\n");
-        exit(0);
+        printf("\n Socket creation error \n");
+        return -1;
     }
 
-    printf("Socket Bound...\n");
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(HP.port);
 
-    // Listening on Port
+    if (inet_pton(AF_INET, HP.host, &serv_addr.sin_addr) <= 0)
+    {
+        printf(
+            "\nInvalid address/ Address not supported \n");
+        return -1;
+    }
 
-    if (listen(socket_fd, 0) < 0)
+    if ((status = connect(sockfd, (struct sockaddr *)&serv_addr,
+                          sizeof(serv_addr))) < 0)
     {
-        perror("Cannot Listen\n");
-        exit(0);
+        printf("\nConnection Failed \n");
+        return -1;
     }
-    printf("Listening on %d...\n", port);
-    while(1){
-			fork();
-    sockfd = accept(socket_fd, (struct sockaddr *)&address, (socklen_t *)&address_length);
-	
-	if (sockfd < 0)
-    {
-        printf("Cannot accept");
-    }
-    printf("Connection accepted from %s:%d\n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-    createWindow(&window,7);
+
+    createWindow(&window,4);
     backup_length = window.Ssize;
 	backup = malloc(sizeof(FRAME)*backup_length);
 	backup_start = 0;
 	backup_next = 0;
-	sendFile();
-	}
+	char buffer[2];
+	recv(sockfd,buffer,sizeof("1"),0);
+	if (strcmp(buffer,"1") == 0)
+			sendFile();
     close(sockfd);
-
-    shutdown(socket_fd, SHUT_RDWR);
-    return 0;
+		
+	printf("frames sent: %d, ack received: %d, lost frames: %d",total_frames_sent, ack_received, (total_frames_sent-ack_received));
+    printf("efficiency: %.2f", (float)ack_received*100/(float)total_frames_sent);
+	return 0;
 }

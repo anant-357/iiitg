@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "myserver.h"
 #include "frame.h"
 
@@ -12,6 +13,7 @@ void createFrame(int sequence, int type, char data[DATA_SIZE], FRAME* frame){
 }
 
 void noise(FRAME *frame){
+    srand(time(0));
     if(NOISE == -1 || rand()%NOISE == 0){
 		frame->lost=1;
 		printf("loosing frame\n");

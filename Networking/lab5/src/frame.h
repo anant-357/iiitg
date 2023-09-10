@@ -13,7 +13,7 @@ typedef struct
 #define ACK 1
 #define NACK -1
 #define DATA 0
-#define NOISE 2
+#define NOISE 3
 #define FRAME_SIZE DATA_SIZE+3
 #define SEQUENCE_BITS 3
 

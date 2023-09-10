@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include<unistd.h>
 
 void createWindow(WINDOW* window, int size){
     int max = (int)pow(2,SEQUENCE_BITS)-1;
@@ -20,6 +21,17 @@ void createWindow(WINDOW* window, int size){
 	for(int i=0;i<(window->Ssize+1);i++){
 		window->slots[i] = UNSET;
 	}
+}
+
+void printWindow(WINDOW window){
+    int slot_index = window.Sf == -1 ? 0 : window.Sf;
+    printf("[%d:%d] ",slot_index,window.slots[slot_index]);
+	slot_index=(slot_index+1)%window.Ssize;
+	while(slot_index != (window.Sf + window.Ssize) % window.Ssize){
+		printf("[%d:%d] ",slot_index,window.slots[slot_index]);
+		slot_index = (slot_index + 1) % window.Ssize;
+	}
+	printf("||Sf:%d[]Sn:%d\n",window.Sf, window.Sn);
 }
 
 void markFrameSent(WINDOW* window, FRAME frame){
@@ -45,13 +57,4 @@ void markFrameAcknowledged(WINDOW* window, FRAME frame){
 	printWindow(*window);
 }
 
-void printWindow(WINDOW window){
-    int slot_index = window.Sf == -1 ? 0 : window.Sf;
-    printf("[%d:%d] ",slot_index,window.slots[slot_index]);
-	slot_index=(slot_index+1)%window.Ssize;
-	while(slot_index != (window.Sf + window.Ssize) % window.Ssize){
-		printf("[%d:%d] ",slot_index,window.slots[slot_index]);
-		slot_index = (slot_index + 1) % window.Ssize;
-	}
-	printf("||Sf:%d[]Sn:%d\n",window.Sf, window.Sn);
-}
+
