@@ -19,11 +19,14 @@
 #include "frame.h"
 #include <math.h>
 
-char filename[20];
+FRAME* backup;
+int backup_length;
+int backup_start;
+int backup_next;
 int sockfd;
 
-int total_frames_sent;
-int ack_received;
+int total_frames_sent = 0;
+int acks_received = 0;
 
 pthread_t timer_thread_id;
 pthread_t acknowledgement_thread_id;
@@ -31,22 +34,31 @@ pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 WINDOW window;
 
+void addFrameToBackup(FRAME frame){
+		backup[backup_next].sequence = frame.sequence;
+		backup[backup_next].acknowledgement = frame.acknowledgement;
+		backup[backup_next].lost = frame.lost;
+		strcpy(backup[backup_next].data ,frame.data);
+		backup_next = (backup_next + 1)%backup_length;
+		if(backup_next == backup_start){
+				backup_start = (backup_next+1)%backup_length;
+		}
+}
 
-int sendFrame(FRAME* frame, int first_time){
+int sendFrame(FRAME* frame){
 		char frame_str[sizeof(FRAME)];
+		addFrameToBackup(*frame);
 		memcpy(frame_str, frame, sizeof(FRAME));
-		total_frames_sent++;
+		printf("%s\n", frame_str);
         if (send(sockfd, frame_str, sizeof(FRAME), 0) == -1)
         {
             perror("Unable to send Data");
             return -1;
         }
-		if(first_time == 1){
-				pthread_mutex_lock(&lock);
-				markFrameSent(&window,*frame);
-				pthread_mutex_unlock(&lock);
-				printf("Sent frame: %d\n", frame->sequence);
-		}
+		pthread_mutex_lock(&lock);
+		total_frames_sent++;
+		markFrameSent(&window,*frame);
+		pthread_mutex_unlock(&lock);
 		return 1;
 }
 
@@ -65,14 +77,10 @@ int receiveAcknowledgement(){
 		if(frame.lost==1){
 				return 0;
 		}
-		ack_received++;
+		acks_received++;
 		pthread_mutex_lock(&lock);
-		if(window.slots[frame.sequence]!=SENT){
-				return 0;
-		}
 		markFrameAcknowledged(&window, frame);
 		pthread_mutex_unlock(&lock);
-		printf("Received Acknowledgement: %d\n", frame.sequence);
 		return 1;
 }
 
@@ -91,14 +99,9 @@ void* timer_thread_function(void* void_fd) {
             if (read(fd, &expirations, sizeof(expirations))==-1){
                 perror("read");
             } else {
-                printf("Timer expired -> resending Frame(s)\n");
-				sendFrame(&(window.frames[window.Sf]), 0);
-				printf("Resent frame: %d\n", window.Sf);
-				for(int slot = window.Sf + 1; slot != window.Sn; slot = (slot + 1)%window.Ssize){
-						sendFrame(&(window.frames[slot]), 0);
-						printf("Resent frame: %d\n", slot);
-				}            
-			}
+                printf("Timer expired -> resending Frame\n");
+				sendFrame(&(window.frames[window.Sf]));
+            }
         } else{
             perror("poll");
         }
@@ -107,12 +110,12 @@ void* timer_thread_function(void* void_fd) {
 
 void* acknowledgement_thread_function(){
     while(1){
-		if(receiveAcknowledgement()==1){
-				printWindow(window);
+		int r = receiveAcknowledgement();
+		if(r==1){
 				pthread_cancel(timer_thread_id);
 				int timer_fd;
 				timer_fd = timerfd_create(CLOCK_MONOTONIC,0);
-    			if (timer_fd == -1) {
+				if (timer_fd == -1) {
 				    perror("timerfd_create");
 						exit(EXIT_FAILURE);
 				}
@@ -132,7 +135,8 @@ void* acknowledgement_thread_function(){
 }
 
 void* frame_thread_function(){
-    FILE *fp = fopen(filename, "r");
+    char file[10] = "abc.txt";
+    FILE *fp = fopen(file, "r");
     char buffer[DATA_SIZE];
 	int sequence = 0;
 	int finished = 0;
@@ -141,10 +145,12 @@ void* frame_thread_function(){
 				if (fgets(buffer, DATA_SIZE, fp)!=NULL){
 						FRAME frame;
 						createFrame(sequence, DATA, buffer, &frame);
-						sendFrame(&frame, 1);
+						sendFrame(&frame);
+						printFrame(frame);
 						printWindow(window);
-						sequence = (sequence + 1)%window.Ssize;
+						sequence=(sequence + 1) % window.Ssize;
 						bzero(buffer, DATA_SIZE);
+						sleep(2);
 				}else{
 						finished = 1;
 						break;
@@ -154,7 +160,7 @@ void* frame_thread_function(){
 				FRAME frame;
 				strcpy(buffer, "END");
 				createFrame(-1, DATA, buffer, &frame);
-				sendFrame(&frame, 1);
+				sendFrame(&frame);
 				pthread_cancel(timer_thread_id);
 				pthread_cancel(acknowledgement_thread_id);
 				break;
@@ -166,14 +172,7 @@ void* frame_thread_function(){
 void sendFile()
 {
     pthread_mutex_init(&lock, NULL);
-
-    FRAME frame;
-	char buffer[sizeof(FRAME)];
-	frame.sequence = window.Ssize;
-	strcpy(frame.data, "Window Size");
-	memcpy(buffer, &frame, sizeof(FRAME));
-	send(sockfd, buffer, sizeof(FRAME), 0);
-
+	printWindow(window);
 	pthread_t frame_thread_id;
 	int timer_fd;
 	struct itimerspec timer;
@@ -189,31 +188,16 @@ void sendFile()
 	pthread_join(frame_thread_id, NULL);
 }
 
-struct hostAndPort
+int getPort(int argc, char *argv[])
 {
-    char host[15];
-    int port;
-} typedef hp;
-
-hp getPortandHost(int argc, char *argv[])
-{
-    hp HP;
-
     if (argc == 1)
-    {   strcpy(filename,"abc.txt");
-        printf("Using localhost(127.0.0.1) and  default Port(8080)\n");
-        HP.port = PORT;
-        strcpy(HP.host, LOCALHOST);
+    {
+        printf("Using default Port(8080)");
+        return PORT;
     }
     else if (argc == 2)
-    {   
-        strcpy(HP.host, LOCALHOST);
-		strcpy(filename, argv[1]);
-        HP.port = PORT;
-    }
-    else if (argc == 3)
     {
-		int port = atoi(argv[2]);
+        int port = atoi(argv[1]);
         if (port == 0)
         {
             perror("Incorrect format of port.Example Usage:\n\n\t./server 5050");
@@ -222,68 +206,77 @@ hp getPortandHost(int argc, char *argv[])
         else
         {
             printf("Using port: %d", port);
-			HP.port = port;
         }
-		strcpy(filename, argv[1]);
+        return port;
     }
-    else if (argc == 4)
+    else
     {
-		int port = atoi(argv[3]);
-        if (port == 0)
-        {
-            perror("Incorrect format of port.Example Usage:\n\n\t./server 5050");
-            exit(0);
-        }
-        strcpy(HP.host, argv[2]);
-        strcpy(filename, argv[1]);
-		HP.port = port;
-
-    }else{
-		perror("Too many inputs!.Example Usage:\n\n\t./client \"127.0.0.1\" 5050");
-        HP.port = -1;
-        strcpy(HP.host, "");
-	}
-    return HP;
+        perror("Too many inputs!.Example Usage:\n\n\t./server 5050");
+        return -1;
+    }
 }
-
-
 
 int main(int argc, char *argv[])
 {
-    hp HP = getPortandHost(argc, argv);
-    int status;
-    struct sockaddr_in serv_addr;
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    int socket_fd;
+    int port = getPort(argc, argv);
+    int opt = 1;
+
+    struct sockaddr_in address;
+    int address_length = sizeof(address);
+
+    if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        printf("\n Socket creation error \n");
-        return -1;
+        perror("Could not Make Socket\n");
+        exit(0);
+    }
+    printf("Socket Made...\n");
+    if ((setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))))
+    {
+        perror("Could not setup socket options\n");
+        exit(0);
+    }
+    printf("Socket Options Set-Up...\n");
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(port);
+
+    // Binding Socket
+
+    if (bind(socket_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
+    {
+        perror("Bind Failed\n");
+        exit(0);
     }
 
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(HP.port);
+    printf("Socket Bound...\n");
 
-    if (inet_pton(AF_INET, HP.host, &serv_addr.sin_addr) <= 0)
+    // Listening on Port
+
+    if (listen(socket_fd, 0) < 0)
     {
-        printf(
-            "\nInvalid address/ Address not supported \n");
-        return -1;
+        perror("Cannot Listen\n");
+        exit(0);
     }
+    printf("Listening on %d...\n", port);
 
-    if ((status = connect(sockfd, (struct sockaddr *)&serv_addr,
-                          sizeof(serv_addr))) < 0)
+    sockfd = accept(socket_fd, (struct sockaddr *)&address, (socklen_t *)&address_length);
+	
+	if (sockfd < 0)
     {
-        printf("\nConnection Failed \n");
-        return -1;
+        printf("Cannot accept");
     }
+    printf("Connection accepted from %s:%d\n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+    createWindow(&window,7);
+    backup_length = window.Ssize;
+	backup = malloc(sizeof(FRAME)*backup_length);
+	backup_start = 0;
+	backup_next = 0;
+	sendFile();
+    	printf("total frames sent : %d , total acks received : %d, efficiency %f",total_frames_sent, acks_received, (float)(acks_received)*100/(float)total_frames_sent );
+	close(sockfd);
 
-    createWindow(&window,4);
-	char buffer[2];
-	recv(sockfd,buffer,sizeof("1"),0);
-	if (strcmp(buffer,"1") == 0)
-			sendFile();
-    close(sockfd);
-		
-	printf("frames sent: %d, ack received: %d, lost frames: %d",total_frames_sent, ack_received, (total_frames_sent-ack_received));
-    printf("efficiency: %.2f", (float)ack_received*100/(float)total_frames_sent);
-	return 0;
+    shutdown(socket_fd, SHUT_RDWR);
+    return 0;
 }

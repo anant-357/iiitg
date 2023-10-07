@@ -18,12 +18,19 @@
 #include <fcntl.h>
 #include "window.h"
 
-int total_acks;
-int lost_acks;
+char filename[20];
+int sockfd;
+
+int total_acks=0;
+int lost_acks=0;
+
+pthread_t timer_thread_id;
+pthread_t acknowledgement_thread_id;
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+WINDOW window;
 
 int Rn;
 int window_size = 4;
-char filename[20];
 
 struct hostAndPort
 {
@@ -65,7 +72,7 @@ int sendAcknowledgement(int sockfd, int sequence, char* buffer){
 		strcpy(frame.data,"Piggy backing Data");
 		noise(&frame);
 		total_acks++;
-		printf("Sending Acknowledgement for %d", sequence);
+		printf("Sending Acknowledgement for %d with data: %s", sequence, frame.data);
 		if(frame.lost==1){
 				lost_acks++;
 				printf("Acknowledgement Lost!\n");
@@ -82,6 +89,7 @@ int sendAcknowledgement(int sockfd, int sequence, char* buffer){
 		return 1;
 
 }
+
 
 void getFile(int sockfd, char *file)
 {

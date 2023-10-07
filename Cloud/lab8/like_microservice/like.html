@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+<button id="like-button">Like</button>
+<span id="like-count">0</span> likes
+
+<script>
+    // JavaScript
+    const likeCountElement = document.getElementById('like-count');
+  
+    // Function to fetch and update like count from the server
+    async function updateLikeCount() {
+      try {
+        const response = await fetch('/1/get-like-count');
+        const data = await response.json();
+        likeCountElement.innerText = data.count;
+      } catch (error) {
+        console.error('Error updating like count:', error);
+      }
+    }
+  
+    // Call the function to update like count when the page loads
+    window.addEventListener('load', updateLikeCount);
+  
+    // Listen for clicks on the like button and update like count
+    const likeButton = document.getElementById('like-button');
+    likeButton.addEventListener('click', async () => {
+      try {
+        // Send a request to increment the like count on the server
+        await fetch('/1/increment-like-count', { method: 'POST' });
+        // Update the like count displayed on the page
+        await updateLikeCount();
+      } catch (error) {
+        console.error('Error incrementing like count:', error);
+      }
+    });
+  </script>
+  
+</body>
+</html>

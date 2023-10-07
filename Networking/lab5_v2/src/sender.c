@@ -28,8 +28,10 @@ int ack_received;
 pthread_t timer_thread_id;
 pthread_t acknowledgement_thread_id;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER; 
-
 WINDOW window;
+
+int Rn;
+int window_size =4;
 
 
 int sendFrame(FRAME* frame, int first_time){
@@ -38,6 +40,7 @@ int sendFrame(FRAME* frame, int first_time){
 		total_frames_sent++;
         if (send(sockfd, frame_str, sizeof(FRAME), 0) == -1)
         {
+		print();
             perror("Unable to send Data");
             return -1;
         }
@@ -108,6 +111,7 @@ void* timer_thread_function(void* void_fd) {
 void* acknowledgement_thread_function(){
     while(1){
 		if(receiveAcknowledgement()==1){
+				printf("Sending ACK for Piggy Backing Data\n");
 				printWindow(window);
 				pthread_cancel(timer_thread_id);
 				int timer_fd;
@@ -128,6 +132,7 @@ void* acknowledgement_thread_function(){
 				pthread_create(&timer_thread_id, NULL, &timer_thread_function, &timer_fd);
 		}
 	}
+    
 		return (void*)NULL;
 }
 

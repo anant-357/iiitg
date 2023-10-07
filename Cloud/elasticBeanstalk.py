@@ -13,18 +13,35 @@ eb = boto3.client('elasticbeanstalk', region_name='ap-south-1')
 cf = boto3.client('cloudfront', region_name='ap-south-1')
 def create_cf_distribution():
     cf.create_distribution(
-                DistributionConfig = {
-                        "DefaultCacheBehaviour": {
-                                "TargetOriginId": "anant-cclab-bucket",
-                                "ViewerProtocolPolicy": "allow-all"
-                            },
-                        "CallerReference": "cdn",
-                        "Enabled": True,
-                    },
-                Origins = {
-                    "Quantity" : 0,
-                    "Items": []
-                    }
+            DistributionConfig={
+        "CallerReference": "CDNprofile",
+        "DefaultRootObject": "",
+        "Origins": {
+            "Quantity": 1,
+            "Items": [
+                {
+                    "Id": "anant-cclab-bucket",
+                    "DomainName": "anant-cclab-bucket.s3.ap-south-1.amazonaws.com",
+                    "S3OriginConfig": {"OriginAccessIdentity": ""},
+                },
+            ],
+        },
+        
+        'DefaultCacheBehavior': dict(
+                TargetOriginId = 'anant-cclab-bucket',
+                ViewerProtocolPolicy= 'redirect-to-https',
+                TrustedSigners = dict(Quantity=0, Enabled=False),
+                ForwardedValues=dict(
+                    Cookies = {'Forward':'all'},
+                    Headers = dict(Quantity=0),
+                    QueryString=False,
+                    QueryStringCacheKeys= dict(Quantity=0),
+                    ),
+                MinTTL=1000
+        ),
+        "Comment": "distribution to host portfolio",
+        "Enabled": True,
+    }
             )
 
 def create_app_ver():
@@ -148,4 +165,5 @@ def create_rds_instance():
 
 #create_rds_instance()
 #create_app_ver()
-create_env()
+#create_env()
+create_cf_distribution()

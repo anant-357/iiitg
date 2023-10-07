@@ -1,0 +1,16 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-c",
+      "-g",
+      "-Wall",
+      "-o",
+      "../bin/main",
+      "main.c"
+    ],
+    "directory": "/home/zinnia/iiitg/Networking/lab9/src",
+    "file": "/home/zinnia/iiitg/Networking/lab9/src/main.c",
+    "output": "/home/zinnia/iiitg/Networking/lab9/bin/main"
+  }
+]

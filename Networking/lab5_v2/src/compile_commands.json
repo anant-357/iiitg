@@ -1,0 +1,30 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-c",
+      "-g",
+      "-Wall",
+      "-o",
+      "../bin/server",
+      "server.c"
+    ],
+    "directory": "/home/zinnia/iiitg/Networking/lab5/src",
+    "file": "/home/zinnia/iiitg/Networking/lab5/src/server.c",
+    "output": "/home/zinnia/iiitg/Networking/lab5/bin/server"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-c",
+      "-g",
+      "-Wall",
+      "-o",
+      "../bin/client",
+      "client.c"
+    ],
+    "directory": "/home/zinnia/iiitg/Networking/lab5/src",
+    "file": "/home/zinnia/iiitg/Networking/lab5/src/client.c",
+    "output": "/home/zinnia/iiitg/Networking/lab5/bin/client"
+  }
+]

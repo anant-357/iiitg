@@ -17,13 +17,7 @@
 #include <poll.h>
 #include <fcntl.h>
 #include "window.h"
-
-int total_acks;
-int lost_acks;
-
-int Rn;
-int window_size = 4;
-char filename[20];
+int last;
 
 struct hostAndPort
 {
@@ -43,10 +37,8 @@ int receiveFrame(int sockfd, char* buffer, char* file){
 				return 0;
 		if(frame.sequence == -1)
 				return -2;
-		if(frame.lost == 1 || frame.sequence != Rn)
-				return -1;
 		printFrame(frame);
-		if(frame.sequence == Rn){
+		if(frame.sequence>last){
 				int file_fd = open(file, O_CREAT | O_WRONLY | O_APPEND, 0666);
 				int out = dup(STDOUT_FILENO);
 				dup2(file_fd, STDOUT_FILENO);
@@ -54,7 +46,6 @@ int receiveFrame(int sockfd, char* buffer, char* file){
 				fflush(stdout);
 				dup2(out, STDOUT_FILENO);
 				close(file_fd);
-				Rn = (Rn + 1)%window_size;
 		}
 		return frame.sequence;
 }
@@ -64,14 +55,6 @@ int sendAcknowledgement(int sockfd, int sequence, char* buffer){
 		frame.acknowledgement = 1;
 		strcpy(frame.data,"Piggy backing Data");
 		noise(&frame);
-		total_acks++;
-		printf("Sending Acknowledgement for %d", sequence);
-		if(frame.lost==1){
-				lost_acks++;
-				printf("Acknowledgement Lost!\n");
-				return 1;
-		}
-		printf("\n");
 		memcpy(buffer, &frame, sizeof(FRAME));
 		fflush(stdout);
 		if (send(sockfd, buffer , sizeof(FRAME), 0) <= 0)
@@ -79,6 +62,7 @@ int sendAcknowledgement(int sockfd, int sequence, char* buffer){
             perror("Error while acknowledging");
 			return -1;
         }
+		printFrame(frame);
 		return 1;
 
 }
@@ -86,14 +70,7 @@ int sendAcknowledgement(int sockfd, int sequence, char* buffer){
 void getFile(int sockfd, char *file)
 {
     char buffer[sizeof(FRAME)];
-	FRAME frame;
-	recv(sockfd, buffer, sizeof(FRAME), 0);
-    memcpy(&frame, buffer, sizeof(FRAME));
-	bzero(buffer, sizeof(FRAME));
-
-
-	window_size = frame.sequence;
-	Rn = 0;
+	last=-1;
     while (1)
     {
 		int sequence = receiveFrame(sockfd, buffer, file);
@@ -101,7 +78,7 @@ void getFile(int sockfd, char *file)
 		if(sequence>=0){
 				sendAcknowledgement(sockfd, sequence, buffer);
 		    	bzero(buffer, sizeof(FRAME));
-		}else if (sequence == -2){
+		}else{
 				close(sockfd);
 				break;
 		}
@@ -114,20 +91,14 @@ hp getPortandHost(int argc, char *argv[])
     hp HP;
 
     if (argc == 1)
-    {   strcpy(filename,"abc.txt");
+    {
         printf("Using localhost(127.0.0.1) and  default Port(8080)\n");
-        HP.port = PORT;
         strcpy(HP.host, LOCALHOST);
+        HP.port = PORT;
     }
     else if (argc == 2)
-    {   
-        strcpy(HP.host, LOCALHOST);
-		strcpy(filename, argv[1]);
-        HP.port = PORT;
-    }
-    else if (argc == 3)
     {
-		int port = atoi(argv[2]);
+        int port = atoi(argv[1]);
         if (port == 0)
         {
             perror("Incorrect format of port.Example Usage:\n\n\t./server 5050");
@@ -138,25 +109,24 @@ hp getPortandHost(int argc, char *argv[])
             printf("Using port: %d", port);
 			HP.port = port;
         }
-		strcpy(filename, argv[1]);
     }
-    else if (argc == 4)
+    else if (argc == 3)
     {
-		int port = atoi(argv[3]);
+        int port = atoi(argv[2]);
         if (port == 0)
         {
             perror("Incorrect format of port.Example Usage:\n\n\t./server 5050");
             exit(0);
         }
-        strcpy(HP.host, argv[2]);
-        strcpy(filename, argv[1]);
-		HP.port = port;
-
-    }else{
-		perror("Too many inputs!.Example Usage:\n\n\t./client \"127.0.0.1\" 5050");
+        strcpy(HP.host, argv[1]);
+        HP.port = port;
+    }
+    else
+    {
+        perror("Too many inputs!.Example Usage:\n\n\t./client \"127.0.0.1\" 5050");
         HP.port = -1;
         strcpy(HP.host, "");
-	}
+    }
     return HP;
 }
 
@@ -188,11 +158,8 @@ int main(int argc, char *argv[])
         return -1;
     }
     int socket = client_fd;
-    char buffer[2];
-	recv(socket,buffer,sizeof("1"),0);
-	if (strcmp(buffer,"1") == 0)
-			getFile(socket, filename);
 
-	printf("total acks: %d, lost acks: %d", total_acks, lost_acks);
+	getFile(socket, "alice.txt");
+
     return 0;
 }

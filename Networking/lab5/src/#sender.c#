@@ -31,7 +31,6 @@ pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 WINDOW window;
 
-
 int sendFrame(FRAME* frame, int first_time){
 		char frame_str[sizeof(FRAME)];
 		memcpy(frame_str, frame, sizeof(FRAME));
