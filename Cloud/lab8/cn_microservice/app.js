@@ -18,7 +18,7 @@ const create_table = `CREATE TABLE IF NOT EXISTS users (
 )`;
 
 
-const default_name =`INSERT INTO users (name) VALUES ('Shreya')`;
+const default_name =`INSERT INTO users (name) VALUES ('Anant')`;
 
 
 pool.getConnection().then(async (connection) => {

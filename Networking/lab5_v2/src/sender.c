@@ -40,7 +40,6 @@ int sendFrame(FRAME* frame, int first_time){
 		total_frames_sent++;
         if (send(sockfd, frame_str, sizeof(FRAME), 0) == -1)
         {
-		print();
             perror("Unable to send Data");
             return -1;
         }
