@@ -16,7 +16,7 @@
     // Function to fetch and update like count from the server
     async function updateLikeCount() {
       try {
-        const response = await fetch('/1/get-like-count');
+        const response = await fetch('/dev/get-like-count');
         const data = await response.json();
         likeCountElement.innerText = data.count;
       } catch (error) {
@@ -32,7 +32,7 @@
     likeButton.addEventListener('click', async () => {
       try {
         // Send a request to increment the like count on the server
-        await fetch('/1/increment-like-count', { method: 'POST' });
+        await fetch('/dev/increment-like-count', { method: 'POST' });
         // Update the like count displayed on the page
         await updateLikeCount();
       } catch (error) {

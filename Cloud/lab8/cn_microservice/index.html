@@ -4,20 +4,135 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-    <link rel="stylesheet" href="style.css">
     <title>Document</title>
 </head>
+<style>
+* {
+    margin: 0;
+}
+
+body{
+    width: 100vw;
+    height: 100vh;
+    background-color: #111111;
+}
+
+.parent-container {
+    position: relative;
+    height: 100vh; 
+    background-color: #282828;
+
+}
+
+.primary {
+    width: 67%;
+    height: 500px;
+    background-color: #282828;
+
+
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+}
+
+.primary img{
+    height:400px;
+
+    margin-left: 90px;
+    border-radius: 500px;
+}
+
+.secondary{
+    height: 100%;
+    width:100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    align-self: center;
+    background-color: #282828;
+    justify-content: center;
+
+}
+
+.secondary h1{
+    color: #ffffffB3;
+    font-family: 'Fraunces', serif;
+    font-size: 3.75rem;
+    font-weight: 100;
+    word-spacing: 1rem;
+}
+
+.welcome{
+    margin-top: 10px;
+    color:#ffffffEE;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    letter-spacing: 3px;
+}
+
+
+.btn{
+    margin-top: 20px;
+    display: flex;
+    background-color:#282828 ;
+    flex-direction: row;
+    justify-content:left;
+    outline: black solid 1px;
+}
+
+.btn img{
+    margin: 0;
+    height:20px;
+    width: 20px;
+}
+
+.review, .review:hover, .review:active{
+    text-decoration: none;
+    color: inherit;
+}
+
+.simple{
+    color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    word-spacing: 7px;
+    letter-spacing: 3.5px;
+}
+
+.solid {
+    border-top: 3px solid #ffffff2b;
+    width: 100px;
+  }
+
+.tertiary{
+    display: flex;
+    flex-direction: row;
+}
+
+
+
+.bi{
+    margin-top:20px;
+    width:20px;
+    height: 20px;
+    color: #ffffff9b;
+    margin-right: 10px;
+}
+
+</style>
 <body bgcolor="black">
     <div class="primary">
-	    <!--<img src="https://d3d5mufrwu7ncg.cloudfront.net/my-website/profile-picture.jpg" alt="pp"/>-->
         
         <div class="secondary">
-            <p class="welcome">println!("Hello,World")</p>
+            <p class="welcome">#####################</p>
             <hr class="solid">
             <h1 id="userName">Anant</h1>
-            <p class="simple">Simplicity is prerequisite for reliability</p>
+            <p class="simple">--------------------------------</p>
             <button type="button" class="btn btn-dark">
-                <a href="/0/feedback" class="review">
+                <a href="/dev/feedback" class="review">
                 <img src="email-icon.png" alt="email icon"/>
                 Add Review
                 </a>
@@ -45,7 +160,7 @@
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
 <script>
-    fetch('/set-name')
+    fetch(window.location.href+'/set-name')
     .then(response => response.json())
     .then(data => {
       const userName = data.name;

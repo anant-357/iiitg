@@ -61,45 +61,71 @@ def create_rds_instance():
 if __name__ == "__main__":
     
     Endpoint=create_rds_instance()
-    startup_script = """#!/bin/bash
+    startup_script1 = """#!/bin/bash
 yum update -y
 yum install docker -y
 service docker start
 systemctl enable docker.service
-
-curl -fsSL https://rpm.nodesource.com/setup_16.x | bash -
-yum update -y
-yum install -y nodejs
-npm install -g npm@latest
 
 mkdir /cn_microservice
 aws s3 sync s3://anant-cclab-website/cn_microservice /cn_microservice
 cd /cn_microservice/
 echo 'const endpoint = "{}";module.exports=endpoint;' >> endpoint.js
 docker build -t cn_microservice .
+docker run -d -p 80:8081 -t cn_microservice
+""".format(Endpoint['Address'])
+
+    startup_script2 = """#!/bin/bash
+yum update -y
+yum install docker -y
+service docker start
+systemctl enable docker.service
 
 mkdir /fb_microservice
 aws s3 sync s3://anant-cclab-website/fb_microservice /fb_microservice
 cd /fb_microservice/
 echo 'const endpoint = "{}";module.exports=endpoint;' >> endpoint.js
 docker build -t fb_microservice .
+docker run -d -p 80:8082 -t fb_microservice
+""".format(Endpoint['Address'])
+
+    startup_script3 = """#!/bin/bash
+yum update -y
+yum install docker -y
+service docker start
+systemctl enable docker.service
 
 mkdir /like_microservice
 aws s3 sync s3://anant-cclab-website/like_microservice /like_microservice
 cd /like_microservice/
 echo 'const endpoint = "{}";module.exports=endpoint;' >> endpoint.js
 docker build -t like_microservice .
+docker run -d -p 80:8083 -t like_microservice
+""".format(Endpoint['Address'])
 
-docker run -d -p 8081:8081 -t cn_microservice
-docker run -d -p 8082:8082 -t fb_microservice
-docker run -d -p 8083:8083 -t like_microservice
+    startup_script = """#!/bin/bash
+yum update -y
+yum install -y nodejs npm
+npm install -g npm@latest
 
 mkdir /app
 aws s3 sync s3://anant-cclab-website/app /app
 cd /app
 npm install
 node app.js
-
-""".format(Endpoint['Address'], Endpoint['Address'], Endpoint['Address'])
-    instance_response = create_instance(startup_script)
+"""
     
+
+    instance_response = create_instance(startup_script1)
+    print(instance_response)
+    print("cn-------------")
+    print()
+    instance_response = create_instance(startup_script2)
+    print(instance_response)
+    print("feedback-------------")
+    print()
+    instance_response = create_instance(startup_script3)
+    print(instance_response)
+    print("like-------------")
+    print()
+    #instance_response = create_instance(startup_script)

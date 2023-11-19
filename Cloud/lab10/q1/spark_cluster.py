@@ -5,7 +5,7 @@ from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.clustering import KMeans
 
 
-FEATURE_NAMES = ["age","workclass_code","fnlwgt","education-num","marital_code","occupation_code","relationship_code","race_code","sex_code","capital-gain","capital-loss","hours-per-week","native-country-code"]
+FEATURE_NAMES = ["age","workclass_code","fnlwgt","education-num","marital_code","occupation_code","relationship_code","race_code","sex_code","capital-gain","capital-loss","hours-per-week","native_country_code"]
 
 if __name__ == "__main__":
     spSesh = SparkSession.builder.appName("Clustering").getOrCreate() 
@@ -21,7 +21,6 @@ if __name__ == "__main__":
     X['race_code'] = LE.fit_transform(X['race'])
     X['sex_code'] = LE.fit_transform(X['sex'])
     X['native_country_code'] = LE.fit_transform(X['native-country'])
-    X['sex_code'] = LE.fit_transform(X[''])
 
     X = X[FEATURE_NAMES]
     X = spSesh.createDataFrame(X)
