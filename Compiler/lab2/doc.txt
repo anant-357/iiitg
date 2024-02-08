@@ -1,0 +1,4 @@
+ Doc File
+-> this is documentation code so this should come in doc.txt file 
+->   another doc code   this will also be in doc.txt
+->
