@@ -1,0 +1,8 @@
+#include <stdio.h>
+int main() {
+    float Principle;
+    Principle = 3;
+    Interest = Principle*Amount*Time;
+    Interest = Amount / Time;
+    printf("The area of the triangle is: %.2f\n", Interest);
+}

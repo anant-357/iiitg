@@ -1,0 +1,467 @@
+Terminals unused in grammar
+
+    STRING_LITERAL
+    PRINTF
+    MULT
+    DIV
+
+
+Grammar
+
+    0 $accept: Program $end
+
+    1 Program: Include Functions
+
+    2 Include: INCLUDE_STMT Include
+    3        | INCLUDE_STMT
+
+    4 Functions: Function Functions
+    5          | Function
+
+    6 Function: Typed_Identifier LP Args RP LB Statements RB
+
+    7 Args: Typed_Identifier COMMA Args
+    8     | ε
+
+    9 Statements: Declaration Statements
+
+   10 Declaration: Typed_Identifier Declaration
+   11            | Typed_Identifier SEMICOLON
+
+   12 Typed_Identifier: Type IDENTIFIER
+
+   13 Statements: Statement Statements
+   14           | Statement
+
+   15 Statement: IDENTIFIER ASSIGN Expression SEMICOLON
+
+   16 Expression: IDENTIFIER
+   17           | INTEGER
+   18           | FLOATNUM
+   19           | LP Expression RP
+
+   20 Type: INT
+   21     | FLOAT
+
+
+Terminals, with rules where they appear
+
+    $end (0) 0
+    error (256)
+    IDENTIFIER <sval> (258) 12 15 16
+    STRING_LITERAL <sval> (259)
+    FLOATNUM <sval> (260) 18
+    INTEGER <sval> (261) 17
+    INCLUDE_STMT <sval> (262) 2 3
+    INT (263) 20
+    FLOAT (264) 21
+    LP (265) 6 19
+    RP (266) 6 19
+    SEMICOLON (267) 11 15
+    ASSIGN (268) 15
+    PRINTF (269)
+    COMMA (270) 7
+    MULT (271)
+    LB (272) 6
+    RB (273) 6
+    DIV (274)
+
+
+Nonterminals, with rules where they appear
+
+    $accept (20)
+        on left: 0
+    Program (21)
+        on left: 1
+        on right: 0
+    Include (22)
+        on left: 2 3
+        on right: 1 2
+    Functions (23)
+        on left: 4 5
+        on right: 1 4
+    Function <sval> (24)
+        on left: 6
+        on right: 4 5
+    Args (25)
+        on left: 7 8
+        on right: 6 7
+    Statements (26)
+        on left: 9 13 14
+        on right: 6 9 13
+    Declaration (27)
+        on left: 10 11
+        on right: 9 10
+    Typed_Identifier (28)
+        on left: 12
+        on right: 6 7 10 11
+    Statement <sval> (29)
+        on left: 15
+        on right: 13 14
+    Expression <sval> (30)
+        on left: 16 17 18 19
+        on right: 15 19
+    Type (31)
+        on left: 20 21
+        on right: 12
+
+
+State 0
+
+    0 $accept: • Program $end
+
+    INCLUDE_STMT  shift, and go to state 1
+
+    Program  go to state 2
+    Include  go to state 3
+
+
+State 1
+
+    2 Include: INCLUDE_STMT • Include
+    3        | INCLUDE_STMT •
+
+    INCLUDE_STMT  shift, and go to state 1
+
+    $default  reduce using rule 3 (Include)
+
+    Include  go to state 4
+
+
+State 2
+
+    0 $accept: Program • $end
+
+    $end  shift, and go to state 5
+
+
+State 3
+
+    1 Program: Include • Functions
+
+    INT    shift, and go to state 6
+    FLOAT  shift, and go to state 7
+
+    Functions         go to state 8
+    Function          go to state 9
+    Typed_Identifier  go to state 10
+    Type              go to state 11
+
+
+State 4
+
+    2 Include: INCLUDE_STMT Include •
+
+    $default  reduce using rule 2 (Include)
+
+
+State 5
+
+    0 $accept: Program $end •
+
+    $default  accept
+
+
+State 6
+
+   20 Type: INT •
+
+    $default  reduce using rule 20 (Type)
+
+
+State 7
+
+   21 Type: FLOAT •
+
+    $default  reduce using rule 21 (Type)
+
+
+State 8
+
+    1 Program: Include Functions •
+
+    $default  reduce using rule 1 (Program)
+
+
+State 9
+
+    4 Functions: Function • Functions
+    5          | Function •
+
+    INT    shift, and go to state 6
+    FLOAT  shift, and go to state 7
+
+    $default  reduce using rule 5 (Functions)
+
+    Functions         go to state 12
+    Function          go to state 9
+    Typed_Identifier  go to state 10
+    Type              go to state 11
+
+
+State 10
+
+    6 Function: Typed_Identifier • LP Args RP LB Statements RB
+
+    LP  shift, and go to state 13
+
+
+State 11
+
+   12 Typed_Identifier: Type • IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 14
+
+
+State 12
+
+    4 Functions: Function Functions •
+
+    $default  reduce using rule 4 (Functions)
+
+
+State 13
+
+    6 Function: Typed_Identifier LP • Args RP LB Statements RB
+
+    INT    shift, and go to state 6
+    FLOAT  shift, and go to state 7
+
+    $default  reduce using rule 8 (Args)
+
+    Args              go to state 15
+    Typed_Identifier  go to state 16
+    Type              go to state 11
+
+
+State 14
+
+   12 Typed_Identifier: Type IDENTIFIER •
+
+    $default  reduce using rule 12 (Typed_Identifier)
+
+
+State 15
+
+    6 Function: Typed_Identifier LP Args • RP LB Statements RB
+
+    RP  shift, and go to state 17
+
+
+State 16
+
+    7 Args: Typed_Identifier • COMMA Args
+
+    COMMA  shift, and go to state 18
+
+
+State 17
+
+    6 Function: Typed_Identifier LP Args RP • LB Statements RB
+
+    LB  shift, and go to state 19
+
+
+State 18
+
+    7 Args: Typed_Identifier COMMA • Args
+
+    INT    shift, and go to state 6
+    FLOAT  shift, and go to state 7
+
+    $default  reduce using rule 8 (Args)
+
+    Args              go to state 20
+    Typed_Identifier  go to state 16
+    Type              go to state 11
+
+
+State 19
+
+    6 Function: Typed_Identifier LP Args RP LB • Statements RB
+
+    IDENTIFIER  shift, and go to state 21
+    INT         shift, and go to state 6
+    FLOAT       shift, and go to state 7
+
+    Statements        go to state 22
+    Declaration       go to state 23
+    Typed_Identifier  go to state 24
+    Statement         go to state 25
+    Type              go to state 11
+
+
+State 20
+
+    7 Args: Typed_Identifier COMMA Args •
+
+    $default  reduce using rule 7 (Args)
+
+
+State 21
+
+   15 Statement: IDENTIFIER • ASSIGN Expression SEMICOLON
+
+    ASSIGN  shift, and go to state 26
+
+
+State 22
+
+    6 Function: Typed_Identifier LP Args RP LB Statements • RB
+
+    RB  shift, and go to state 27
+
+
+State 23
+
+    9 Statements: Declaration • Statements
+
+    IDENTIFIER  shift, and go to state 21
+    INT         shift, and go to state 6
+    FLOAT       shift, and go to state 7
+
+    Statements        go to state 28
+    Declaration       go to state 23
+    Typed_Identifier  go to state 24
+    Statement         go to state 25
+    Type              go to state 11
+
+
+State 24
+
+   10 Declaration: Typed_Identifier • Declaration
+   11            | Typed_Identifier • SEMICOLON
+
+    INT        shift, and go to state 6
+    FLOAT      shift, and go to state 7
+    SEMICOLON  shift, and go to state 29
+
+    Declaration       go to state 30
+    Typed_Identifier  go to state 24
+    Type              go to state 11
+
+
+State 25
+
+   13 Statements: Statement • Statements
+   14           | Statement •
+
+    IDENTIFIER  shift, and go to state 21
+    INT         shift, and go to state 6
+    FLOAT       shift, and go to state 7
+
+    $default  reduce using rule 14 (Statements)
+
+    Statements        go to state 31
+    Declaration       go to state 23
+    Typed_Identifier  go to state 24
+    Statement         go to state 25
+    Type              go to state 11
+
+
+State 26
+
+   15 Statement: IDENTIFIER ASSIGN • Expression SEMICOLON
+
+    IDENTIFIER  shift, and go to state 32
+    FLOATNUM    shift, and go to state 33
+    INTEGER     shift, and go to state 34
+    LP          shift, and go to state 35
+
+    Expression  go to state 36
+
+
+State 27
+
+    6 Function: Typed_Identifier LP Args RP LB Statements RB •
+
+    $default  reduce using rule 6 (Function)
+
+
+State 28
+
+    9 Statements: Declaration Statements •
+
+    $default  reduce using rule 9 (Statements)
+
+
+State 29
+
+   11 Declaration: Typed_Identifier SEMICOLON •
+
+    $default  reduce using rule 11 (Declaration)
+
+
+State 30
+
+   10 Declaration: Typed_Identifier Declaration •
+
+    $default  reduce using rule 10 (Declaration)
+
+
+State 31
+
+   13 Statements: Statement Statements •
+
+    $default  reduce using rule 13 (Statements)
+
+
+State 32
+
+   16 Expression: IDENTIFIER •
+
+    $default  reduce using rule 16 (Expression)
+
+
+State 33
+
+   18 Expression: FLOATNUM •
+
+    $default  reduce using rule 18 (Expression)
+
+
+State 34
+
+   17 Expression: INTEGER •
+
+    $default  reduce using rule 17 (Expression)
+
+
+State 35
+
+   19 Expression: LP • Expression RP
+
+    IDENTIFIER  shift, and go to state 32
+    FLOATNUM    shift, and go to state 33
+    INTEGER     shift, and go to state 34
+    LP          shift, and go to state 35
+
+    Expression  go to state 37
+
+
+State 36
+
+   15 Statement: IDENTIFIER ASSIGN Expression • SEMICOLON
+
+    SEMICOLON  shift, and go to state 38
+
+
+State 37
+
+   19 Expression: LP Expression • RP
+
+    RP  shift, and go to state 39
+
+
+State 38
+
+   15 Statement: IDENTIFIER ASSIGN Expression SEMICOLON •
+
+    $default  reduce using rule 15 (Statement)
+
+
+State 39
+
+   19 Expression: LP Expression RP •
+
+    $default  reduce using rule 19 (Expression)

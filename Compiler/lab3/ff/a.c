@@ -14,6 +14,20 @@ struct rule{
   int start;
 };
 
+void getString(int pos, char string[], char sub[])
+{
+    int c = 0;
+    char substring[PRODUCTION_LENGTH];
+ 
+    while (c+pos < strlen(string)) {
+        substring[c] = string[pos + c - 1];
+        c++;
+    }
+ 
+    substring[c] = '\0';
+    strcpy(sub, substring);
+    return 0;
+}
 
 
 void print_rules(struct rule rules[N_RULES]){
@@ -82,7 +96,6 @@ char* first(struct rule rules[N_RULES], char symbol){
     return "not found";
   
   for(int i=0; i< strlen(check.produces); i++){
-    printf("\n %d: %s", i, ret);
     if(i==0){
       if(is_non_terminal(check.produces[i])){
         add_to_set(ret, first(rules, check.produces[i]));
@@ -95,8 +108,14 @@ char* first(struct rule rules[N_RULES], char symbol){
       }
     }
     else if (check.produces[i] == '|'){
-      if(is_non_terminal(check.produces[i+1])){
-        add_to_set(ret, first(rules, check.produces[i+1]));
+      int j = 1;
+      if(is_non_terminal(check.produces[i+j])){
+        char* f = first(rules, check.produces[i+j]);
+                        while(contains(f, '!') && check.produces[i+j]!='|' && check.produces[i+j]!='\0'){                         
+                          add_to_set(ret, f);
+                          j++;
+                          f = first(rules, check.produces[i+j]);
+            }
         reti = strlen(ret);
       }
       else{
@@ -125,8 +144,10 @@ char* follow(struct rule rules[N_RULES], char symbol){
         ret[reti] = '\0';
       }
     }
-    int index = contains(rules[i].produces, symbol);
-    if(index != -1){
+    char* sub = (char *)malloc(N_RETURN* sizeof(char));
+    strcpy(sub, rules[i].produces);
+    int index = contains(sub, symbol);
+    while(index != -1){
       if(rules[i].produces[index+1] == '\0' || rules[i].produces[index+1] == '|' || rules[i].produces[index+1] == ' '){
         if(rules[i].symbol[0] != symbol){
   add_to_set(ret, follow(rules, rules[i].symbol[0]));
@@ -134,21 +155,21 @@ char* follow(struct rule rules[N_RULES], char symbol){
         
       }else{
         char f[N_RETURN];
-        strcpy(f,first(rules, rules[i].produces[index+1]));
-        char fb[N_RETURN];
-        for(int j = 0;j < strlen(f); j++ ){
-          
-          if(f[j] == '!'){
-            strcpy(fb,follow(rules, rules[i].symbol[0]));
-            add_to_set(ret, fb);
-            reti = strlen(ret);
-          }else{
-            ret[reti++] = f[j];
-            ret[reti] = '\0';
-          }
+        int k = 1;
+        strcpy(f,first(rules, rules[i].produces[index+k]));
+        while(contains(f, '!') && rules[i].produces[index+k] != '|' && rules[i].produces[index+k] != '\0' ){
+          add_to_set(ret,f);
+          k++;
+          strcpy(f, first(rules, rules[i].produces[index+k]));
         }
-        
+        if(rules[i].produces[index+k] == '|' || rules[i].produces[index+k] == '\0')
+          add_to_set(ret, follow(rules, rules[i].symbol[0]));
       }
+      int index = contains(sub, '|');
+      if(index == -1)
+        break;
+      getString(index,0,sub, sub);
+      index = contains(sub, symbol);
     }
   }
 

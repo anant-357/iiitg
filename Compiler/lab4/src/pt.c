@@ -4,7 +4,7 @@
 #include "pt.h"
 
 int main(){
-  FILE *in;
+  FILE *in, *out;
   in = fopen("productions","r");
   out = fopen("parsing_table", "w");
   if(in == NULL)
@@ -24,6 +24,20 @@ int main(){
   print_rules(rules);
 
   pt parsing_table;
+  parsing_table.rows[0] = '\0';
+  parsing_table.columns[0] = '\0';
+
+  for(int i=0; i < N_RULES; i++){
+    if(strcmp(rules[i].symbol, "") == 0)
+      break;
+    add_char(parsing_table.rows, rules[i].symbol[0]);
+    for(int j = 0; j < strlen(rules[i].produces); j++){
+      if(!is_non_terminal(rules[i].produces[j]) && rules[i].produces[j] != '!' &&rules[i].produces[j] != '|')
+        add_char(parsing_table.columns, rules[i].produces[j]);
+    }
+  }
+
+  printf("\n%s\n%s\n", parsing_table.rows, parsing_table.columns);
   
   
 

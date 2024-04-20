@@ -106,32 +106,3 @@ char* follow(rule rules[N_RULES], char symbol){
   return ret;
 
 }
-
-
-int main(){
-  FILE *in;
-  in = fopen("productions","r");
-  if(in == NULL)
-    printf("Unable to open file");
-
-  rule rules[N_RULES];
-  int i = 0;
-  
-  while(fscanf(in,"%[^-]->%[^\n]",rules[i].symbol, rules[i].produces) == 2){
-    i++;
-    fscanf(in, "\n");
-  }
-  print_rules(rules);
-  for(int i=0; i< N_RULES; i++){
-    if(strcmp(rules[i].symbol,"") == 0)
-      break;
-    printf("\nfirst %s: %s \n",rules[i].symbol, first(rules, rules[i].symbol[0]));
-    printf("\nfollow %s: %s \n",rules[i].symbol, follow(rules, rules[i].symbol[0]));
-  }
-  //printf("\n follow %c: %s \n", 'F', follow(rules, 'F'));
-  /* char abc[N_RETURN] = "a12e"; */
-  /* char add[N_RETURN] = "13ar"; */
-  /* add_to_set(abc,add); */
-  /* printf("%s", abc); */
-  fclose(in);
-}

@@ -1,5 +1,4 @@
-E->TA
-A->+TA|!
-T->FB
-B->*FB|!
-F->(E)|id
+S->ACB|Cbb|Ba
+A->da|BC
+B->g|!
+C->h|!

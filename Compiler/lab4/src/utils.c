@@ -19,7 +19,7 @@ int contains(char string[], char c){
   return -1;
 }
 
-void add_to_set(char set[N_RETURN], char add[N_RETURN]){
+void add_to_set(char set[], char add[]){
   char* new = (char *)malloc(N_RETURN* sizeof(char));
   int newi = 0;
   new[newi] = '\0';
@@ -36,4 +36,13 @@ int is_non_terminal(char a){
   if( a >= 'A' && a <= 'Z')
     return 1;
   return 0;
+}
+
+
+void add_char(char set[], char symbol){
+  if(contains(set, symbol) == -1){
+    int len = strlen(set);
+    set[len++] = symbol;
+    set[len] = '\0';
+  }
 }

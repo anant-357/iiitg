@@ -15,6 +15,8 @@ void print_rules(rule rules[N_RULES]);
 
 int contains(char string[], char c);
 
-void add_to_set(char set[N_RETURN], char add[N_RETURN]);
+void add_to_set(char set[], char add[]);
+
+void add_char(char set[], char symbol);
 
 int is_non_terminal(char a);
